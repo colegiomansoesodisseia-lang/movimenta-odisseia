@@ -403,7 +403,7 @@
                 <label>Modalidades (máximo 2 por aluno)</label>
                 <p class="alerta">
                     ✅ FUTSAL: 8 pessoas por turma.<br>
-                    ✅ DOMINÓ / FUTMESA / XADREZ / TÊNIS DE MESA: 2 pessoas por turma.<br>
+                    ✅ DOMINÓ / FUTMESA / XADREZ / TÊNIS DE MESA / VOLEI: 2, 2, 2, 2 e 6 pessoas por turma (conforme regra).<br>
                     ✅ QUEIMADA MISTA: até 5 meninas e 5 meninos por turma.
                 </p>
                 <div class="modalidades-lista" id="modalidadesContainer">
@@ -599,7 +599,8 @@ const MODALIDADES = [
     "DOMINÓ",
     "FUTMESA",
     "TÊNIS DE MESA",
-    "XADREZ"
+    "XADREZ",
+    "VOLEI"
 ];
 
 const TURMAS = [
@@ -634,14 +635,20 @@ const LIMITE_MODALIDADE_TURMA = {
     "DOMINÓ": 2,
     "FUTMESA": 2,
     "TÊNIS DE MESA": 2,
-    "XADREZ": 2
+    "XADREZ": 2,
+    "VOLEI": 6
 };
 
 const LIMITE_QUEIMADA_TOTAL = 10; // 5 meninas + 5 meninos
 const LIMITE_QUEIMADA_POR_SEXO = 5;
 
 const LIMITE_MODALIDADES_POR_ALUNO = 2;
-const ADMIN_PASSWORD = "52090949";
+const ADMIN_PASSWORD = "movimenta2025";
+
+/* ============= 2.1) DATA DE EXPIRAÇÃO DAS INSCRIÇÕES ============= */
+/* Inscrições válidas até 08/12/2025 (inclusive).
+   A partir de 09/12/2025 00:00 o formulário é bloqueado. */
+const DATA_EXPIRACAO = new Date(2025, 11, 9, 0, 0, 0); // 09/12/2025 00:00
 
 /* ============= 3) ESTADO ============= */
 
@@ -653,6 +660,7 @@ let adminAberto = false;
 let mostrandoInscritos = false;
 let nomesExcecao = [];
 let emailAtual = null;
+let inscricoesEncerradas = false;
 
 /* ============= 4) AUXILIARES ============= */
 
@@ -688,6 +696,20 @@ function validarEmail(email) {
     return email.includes("@") && email.includes(".");
 }
 
+/* Verifica se as inscrições já expiraram e, se sim, bloqueia o formulário */
+function verificarExpiracao() {
+    const agora = new Date();
+    inscricoesEncerradas = agora >= DATA_EXPIRACAO;
+    if (inscricoesEncerradas) {
+        const form = document.getElementById("formInscricao");
+        if (form) {
+            const campos = form.querySelectorAll("input, select, textarea, button[type='submit']");
+            campos.forEach(el => el.disabled = true);
+        }
+        mostrarMensagemForm("As inscrições foram encerradas. Prazo final: 08/12/2025.", false);
+    }
+}
+
 /* ============= 5) INICIALIZAÇÃO ============= */
 
 function initInterclasse() {
@@ -705,7 +727,7 @@ function initInterclasse() {
         return;
     }
 
-    // Overlay de e-mail (AGORA SEM LOCALSTORAGE: SEMPRE PEDE)
+    // Overlay de e-mail (sempre pede, tanto no PC quanto no celular)
     const overlay = document.getElementById("emailOverlay");
     const emailInput = document.getElementById("emailAluno");
     const btnEntrarEmail = document.getElementById("btnEntrarEmail");
@@ -729,6 +751,9 @@ function initInterclasse() {
             liberarComEmail();
         }
     });
+
+    // Verifica expiração logo na inicialização
+    verificarExpiracao();
 
     selectTurma.disabled = true;
 
@@ -951,6 +976,12 @@ function iniciarListenerExcecoes() {
 
 async function handleSubmitInscricao(event) {
     event.preventDefault();
+
+    // Bloqueia novas inscrições após a data de expiração
+    if (inscricoesEncerradas) {
+        mostrarMensagemForm("As inscrições foram encerradas. Prazo final: 08/12/2025.", false);
+        return;
+    }
 
     if (!emailAtual || !validarEmail(emailAtual)) {
         alert("Informe seu e-mail antes de fazer a inscrição.");
