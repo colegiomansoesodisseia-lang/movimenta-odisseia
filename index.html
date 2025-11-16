@@ -103,6 +103,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
         button,
         select,
@@ -310,6 +311,11 @@
             display: none;
         }
 
+        /* Painel de jogos começa escondido */
+        #secJogos {
+            display: none;
+        }
+
         /* Campo de busca admin */
         #adminSearch {
             width: 100%;
@@ -339,6 +345,10 @@
     <div class="header-right">
         <button id="btnToggleInscritos" class="btn btn-primaria">
             👀 Ver inscritos
+        </button>
+        <!-- BOTÃO VER JOGOS -->
+        <button id="btnToggleJogos" class="btn btn-primaria">
+            📅 Ver jogos
         </button>
         <button id="btnAdminArea" class="btn btn-admin">
             🔐 Área Administrativa
@@ -455,6 +465,38 @@
         </table>
     </section>
 
+    <!-- SEÇÃO: TABELA DE JOGOS (VISUALIZAÇÃO ALUNO) -->
+    <section class="card" id="secJogos">
+        <h2>Tabela de jogos</h2>
+        <small>Selecione o turno para ver os jogos do Movimenta Odisseia.</small>
+
+        <div class="filtros">
+            <div>
+                <label for="jogosTurno">Turno</label>
+                <select id="jogosTurno">
+                    <option value="">Selecione...</option>
+                    <option value="Matutino">Matutino</option>
+                    <option value="Vespertino">Vespertino</option>
+                    <option value="Noturno">Noturno</option>
+                </select>
+            </div>
+        </div>
+
+        <table id="tabelaJogos">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Horário</th>
+                    <th>Turma X Turma</th>
+                    <th>Local</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- jogos via JS (filtrados por turno) -->
+            </tbody>
+        </table>
+    </section>
+
     <!-- ÁREA ADMINISTRATIVA (SOMENTE COM SENHA) -->
     <section class="card" id="adminSection">
         <h2>Área Administrativa</h2>
@@ -549,6 +591,65 @@
             <button id="btnImprimirRelatorio" class="btn btn-primaria" style="margin-top:8px;">
                 🖨️ Imprimir relatório
             </button>
+        </div>
+
+        <!-- BLOCO: CRIAR / EDITAR TABELA DE JOGOS -->
+        <div class="admin-actions">
+            <h3>Criar / editar tabela de jogos</h3>
+            <p style="font-size:0.84rem; margin:4px 0 8px;">
+                Selecione o turno, defina <strong>Turma X Turma</strong>, data, horário e local. Clique em <strong>Salvar jogo</strong> para montar a tabela. Tudo que for salvo aqui aparece automaticamente no botão <strong>Ver jogos</strong> para os alunos, de acordo com o turno.
+            </p>
+            <div class="grid-2">
+                <div>
+                    <label for="jogoTurno">Turno</label>
+                    <select id="jogoTurno">
+                        <option value="">Selecione...</option>
+                        <option value="Matutino">Matutino</option>
+                        <option value="Vespertino">Vespertino</option>
+                        <option value="Noturno">Noturno</option>
+                    </select>
+
+                    <label for="jogoTurma1" style="margin-top:8px;">Turma 1</label>
+                    <select id="jogoTurma1">
+                        <option value="">Selecione o turno...</option>
+                    </select>
+
+                    <label for="jogoTurma2" style="margin-top:8px;">Turma 2</label>
+                    <select id="jogoTurma2">
+                        <option value="">Selecione o turno...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="jogoData">Data</label>
+                    <input type="date" id="jogoData" />
+
+                    <label for="jogoHora" style="margin-top:8px;">Horário</label>
+                    <input type="time" id="jogoHora" />
+
+                    <label for="jogoLocal" style="margin-top:8px;">Local</label>
+                    <input type="text" id="jogoLocal" placeholder="Ex: Quadra coberta, Campo, etc." />
+                </div>
+            </div>
+            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;">
+                <button id="btnSalvarJogo" class="btn btn-primaria" type="button">💾 Salvar jogo</button>
+                <button id="btnLimparJogo" class="btn btn-primaria" type="button">🧹 Limpar formulário</button>
+            </div>
+
+            <table id="tabelaJogosAdmin" style="margin-top:10px;">
+                <thead>
+                    <tr>
+                        <th>Turno</th>
+                        <th>Data</th>
+                        <th>Horário</th>
+                        <th>Turma X Turma</th>
+                        <th>Local</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- jogos admin via JS -->
+                </tbody>
+            </table>
         </div>
 
         <div style="margin-top:14px;">
@@ -658,9 +759,14 @@ let todasInscricoes = [];
 let isAdmin = false;
 let adminAberto = false;
 let mostrandoInscritos = false;
+let mostrandoJogos = false;
 let nomesExcecao = [];
 let emailAtual = null;
 let inscricoesEncerradas = false;
+
+// ESTADO DOS JOGOS
+let jogos = [];
+let jogoEditandoId = null;
 
 /* ============= 4) AUXILIARES ============= */
 
@@ -722,12 +828,15 @@ function initInterclasse() {
     const relTurma = document.getElementById("relTurma");
     const relModalidade = document.getElementById("relModalidade");
 
+    // elementos dos jogos (público)
+    const jogosTurnoSelect = document.getElementById("jogosTurno");
+
     if (!selectTurma || !selectTurno || !filtroTurma || !filtroModalidade || !modalidadesContainer) {
         console.error("Erro ao carregar elementos principais. Verifique o HTML.");
         return;
     }
 
-    // Overlay de e-mail (sempre pede, tanto no PC quanto no celular)
+    // Overlay de e-mail (sempre pede)
     const overlay = document.getElementById("emailOverlay");
     const emailInput = document.getElementById("emailAluno");
     const btnEntrarEmail = document.getElementById("btnEntrarEmail");
@@ -855,6 +964,7 @@ function initInterclasse() {
     filtroModalidade.addEventListener("change", renderizarTabelaPublica);
 
     document.getElementById("btnToggleInscritos").addEventListener("click", alternarPainelInscritos);
+    document.getElementById("btnToggleJogos").addEventListener("click", alternarPainelJogos);
 
     document.getElementById("btnAdminArea").addEventListener("click", function() {
         if (!isAdmin) {
@@ -879,8 +989,28 @@ function initInterclasse() {
     document.getElementById("btnGerarRelatorio").addEventListener("click", gerarRelatorio);
     document.getElementById("btnImprimirRelatorio").addEventListener("click", imprimirRelatorio);
 
+    // listener jogos público (seleção de turno)
+    if (jogosTurnoSelect) {
+        jogosTurnoSelect.addEventListener("change", renderizarTabelaJogosPublica);
+    }
+
+    // listeners jogos admin
+    const jogoTurno = document.getElementById("jogoTurno");
+    if (jogoTurno) {
+        jogoTurno.addEventListener("change", function() {
+            preencherTurmasJogoPorTurno(jogoTurno.value);
+        });
+    }
+    const btnSalvarJogo = document.getElementById("btnSalvarJogo");
+    const btnLimparJogo = document.getElementById("btnLimparJogo");
+    if (btnSalvarJogo) btnSalvarJogo.addEventListener("click", handleSalvarJogo);
+    if (btnLimparJogo) btnLimparJogo.addEventListener("click", function() {
+        limparFormularioJogo();
+    });
+
     iniciarListenerInscricoes();
     iniciarListenerExcecoes();
+    iniciarListenerJogos(); // escuta tabela de jogos em tempo real
 }
 
 if (document.readyState === "loading") {
@@ -969,6 +1099,43 @@ function iniciarListenerExcecoes() {
             renderizarListaExcecoes();
         }, function(error) {
             console.error("Erro ao ouvir exceções:", error);
+        });
+}
+
+// LISTENER PARA A COLEÇÃO "jogos" (CORRIGIDO)
+function iniciarListenerJogos() {
+    db.collection("jogos")
+        .onSnapshot(function(snapshot) {
+            jogos = [];
+
+            snapshot.forEach(function(doc) {
+                const d = doc.data();
+                jogos.push({
+                    id: doc.id,
+                    turno: d.turno || "",
+                    turma1: d.turma1 || "",
+                    turma2: d.turma2 || "",
+                    data: d.data || "",
+                    hora: d.hora || "",
+                    local: d.local || ""
+                });
+            });
+
+            // ordena por data+hora em JS (para não depender de índice no Firestore)
+            jogos.sort(function(a, b) {
+                const va = (a.data || "") + " " + (a.hora || "");
+                const vb = (b.data || "") + " " + (b.hora || "");
+                if (va < vb) return -1;
+                if (va > vb) return 1;
+                return 0;
+            });
+
+            // Atualiza as duas tabelas: alunos (Ver jogos) e admin
+            renderizarTabelaJogosPublica();
+            renderizarTabelaJogosAdmin();
+        }, function(error) {
+            console.error("Erro ao ouvir jogos:", error);
+            alert("Erro ao carregar a tabela de jogos. Veja o console do navegador.");
         });
 }
 
@@ -1193,7 +1360,7 @@ function atualizarDisponibilidadeModalidades() {
     }
 }
 
-/* ============= 9) TABELA PÚBLICA ============= */
+/* ============= 9) TABELA PÚBLICA (INSCRITOS) ============= */
 
 function renderizarTabelaPublica() {
     const corpo = document.querySelector("#tabelaPublica tbody");
@@ -1237,7 +1404,60 @@ function renderizarTabelaPublica() {
     }
 }
 
-/* ============= 10) TABELA ADMIN ============= */
+/* ============= 9.1) TABELA PÚBLICA (JOGOS) ============= */
+
+function renderizarTabelaJogosPublica() {
+    const corpo = document.querySelector("#tabelaJogos tbody");
+    if (!corpo) return;
+    corpo.innerHTML = "";
+
+    const turnoSel = document.getElementById("jogosTurno").value;
+
+    if (!turnoSel) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.textContent = "Selecione um turno para ver os jogos.";
+        tr.appendChild(td);
+        corpo.appendChild(tr);
+        return;
+    }
+
+    const lista = jogos.filter(j => j.turno === turnoSel);
+
+    if (lista.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.textContent = "Ainda não há jogos cadastrados para este turno.";
+        tr.appendChild(td);
+        corpo.appendChild(tr);
+        return;
+    }
+
+    for (let i = 0; i < lista.length; i++) {
+        const j = lista[i];
+        const tr = document.createElement("tr");
+
+        const tdData = document.createElement("td");
+        const tdHora = document.createElement("td");
+        const tdTurmas = document.createElement("td");
+        const tdLocal = document.createElement("td");
+
+        tdData.textContent = j.data || "-";
+        tdHora.textContent = j.hora || "-";
+        tdTurmas.textContent = (j.turma1 || "") + " x " + (j.turma2 || "");
+        tdLocal.textContent = j.local || "-";
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdHora);
+        tr.appendChild(tdTurmas);
+        tr.appendChild(tdLocal);
+        corpo.appendChild(tr);
+    }
+}
+
+/* ============= 10) TABELA ADMIN INSCRITOS ============= */
 
 function renderizarTabelaAdmin() {
     if (!isAdmin) return;
@@ -1296,6 +1516,71 @@ function renderizarTabelaAdmin() {
         tr.appendChild(tdMods);
         tr.appendChild(tdObs);
         tr.appendChild(tdData);
+        corpo.appendChild(tr);
+    }
+}
+
+/* ============= 10.1) TABELA ADMIN JOGOS ============= */
+
+function renderizarTabelaJogosAdmin() {
+    if (!isAdmin) return;
+    const corpo = document.querySelector("#tabelaJogosAdmin tbody");
+    if (!corpo) return;
+    corpo.innerHTML = "";
+
+    if (jogos.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "Nenhum jogo cadastrado ainda.";
+        tr.appendChild(td);
+        corpo.appendChild(tr);
+        return;
+    }
+
+    for (let i = 0; i < jogos.length; i++) {
+        const j = jogos[i];
+        const tr = document.createElement("tr");
+
+        const tdTurno = document.createElement("td");
+        const tdData = document.createElement("td");
+        const tdHora = document.createElement("td");
+        const tdTurmas = document.createElement("td");
+        const tdLocal = document.createElement("td");
+        const tdAcoes = document.createElement("td");
+
+        tdTurno.textContent = j.turno || "-";
+        tdData.textContent = j.data || "-";
+        tdHora.textContent = j.hora || "-";
+        tdTurmas.textContent = (j.turma1 || "") + " x " + (j.turma2 || "");
+        tdLocal.textContent = j.local || "-";
+
+        const btnEditar = document.createElement("button");
+        btnEditar.textContent = "Editar";
+        btnEditar.className = "btn btn-primaria";
+        btnEditar.style.fontSize = "0.75rem";
+        btnEditar.addEventListener("click", function() {
+            carregarJogoParaEdicao(j.id);
+        });
+
+        const btnExcluir = document.createElement("button");
+        btnExcluir.textContent = "Excluir";
+        btnExcluir.className = "btn btn-primaria";
+        btnExcluir.style.fontSize = "0.75rem";
+        btnExcluir.style.marginLeft = "4px";
+        btnExcluir.addEventListener("click", function() {
+            excluirJogo(j.id);
+        });
+
+        tdAcoes.appendChild(btnEditar);
+        tdAcoes.appendChild(btnExcluir);
+
+        tr.appendChild(tdTurno);
+        tr.appendChild(tdData);
+        tr.appendChild(tdHora);
+        tr.appendChild(tdTurmas);
+        tr.appendChild(tdLocal);
+        tr.appendChild(tdAcoes);
         corpo.appendChild(tr);
     }
 }
@@ -1526,7 +1811,166 @@ function imprimirRelatorio() {
     window.print();
 }
 
-/* ============= 15) TROCA DE TELAS (ALUNO / INSCRITOS / ADMIN) ============= */
+/* ============= 15) JOGOS - FUNÇÕES ADMIN ============= */
+
+function preencherTurmasJogoPorTurno(turno) {
+    const sel1 = document.getElementById("jogoTurma1");
+    const sel2 = document.getElementById("jogoTurma2");
+    if (!sel1 || !sel2) return;
+
+    sel1.innerHTML = "";
+    sel2.innerHTML = "";
+
+    const optPadrao1 = document.createElement("option");
+    optPadrao1.value = "";
+    optPadrao1.textContent = turno ? "Selecione a turma 1..." : "Selecione o turno...";
+    sel1.appendChild(optPadrao1);
+
+    const optPadrao2 = document.createElement("option");
+    optPadrao2.value = "";
+    optPadrao2.textContent = turno ? "Selecione a turma 2..." : "Selecione o turno...";
+    sel2.appendChild(optPadrao2);
+
+    const listaTurmas = turno ? getTurmasPorTurno(turno) : TURMAS;
+    listaTurmas.forEach(function(t) {
+        const o1 = document.createElement("option");
+        o1.value = t;
+        o1.textContent = t;
+        sel1.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = t;
+        o2.textContent = t;
+        sel2.appendChild(o2);
+    });
+}
+
+function limparFormularioJogo() {
+    jogoEditandoId = null;
+    const turno = document.getElementById("jogoTurno");
+    const turma1 = document.getElementById("jogoTurma1");
+    const turma2 = document.getElementById("jogoTurma2");
+    const data = document.getElementById("jogoData");
+    const hora = document.getElementById("jogoHora");
+    const local = document.getElementById("jogoLocal");
+    const btnSalvar = document.getElementById("btnSalvarJogo");
+
+    if (turno) turno.value = "";
+    if (turma1) {
+        turma1.innerHTML = '<option value="">Selecione o turno...</option>';
+    }
+    if (turma2) {
+        turma2.innerHTML = '<option value="">Selecione o turno...</option>';
+    }
+    if (data) data.value = "";
+    if (hora) hora.value = "";
+    if (local) local.value = "";
+    if (btnSalvar) btnSalvar.textContent = "💾 Salvar jogo";
+}
+
+async function handleSalvarJogo() {
+    if (!isAdmin) {
+        alert("Apenas a área administrativa pode gerenciar jogos.");
+        return;
+    }
+
+    const turno = document.getElementById("jogoTurno").value;
+    const turma1 = document.getElementById("jogoTurma1").value;
+    const turma2 = document.getElementById("jogoTurma2").value;
+    const data = document.getElementById("jogoData").value;
+    const hora = document.getElementById("jogoHora").value;
+    const local = document.getElementById("jogoLocal").value.trim();
+
+    if (!turno || !turma1 || !turma2 || !data || !hora || !local) {
+        alert("Preencha turno, turmas, data, horário e local.");
+        return;
+    }
+    if (turma1 === turma2) {
+        alert("Turma 1 e Turma 2 não podem ser iguais.");
+        return;
+    }
+
+    const docData = {
+        turno: turno,
+        turma1: turma1,
+        turma2: turma2,
+        data: data,
+        hora: hora,
+        local: local
+    };
+
+    try {
+        if (jogoEditandoId) {
+            await db.collection("jogos").doc(jogoEditandoId).update(docData);
+            alert("Jogo atualizado com sucesso.");
+        } else {
+            await db.collection("jogos").add(docData);
+            alert("Jogo salvo com sucesso.");
+        }
+        limparFormularioJogo();
+    } catch (error) {
+        console.error("Erro ao salvar jogo:", error);
+        alert("Erro ao salvar jogo. Tente novamente.");
+    }
+}
+
+function carregarJogoParaEdicao(id) {
+    const jogo = jogos.find(j => j.id === id);
+    if (!jogo) {
+        alert("Jogo não encontrado.");
+        return;
+    }
+    jogoEditandoId = id;
+
+    const turno = document.getElementById("jogoTurno");
+    const data = document.getElementById("jogoData");
+    const hora = document.getElementById("jogoHora");
+    const local = document.getElementById("jogoLocal");
+    const btnSalvar = document.getElementById("btnSalvarJogo");
+
+    if (turno) {
+        turno.value = jogo.turno || "";
+        preencherTurmasJogoPorTurno(turno.value);
+    }
+
+    const turma1 = document.getElementById("jogoTurma1");
+    const turma2 = document.getElementById("jogoTurma2");
+    if (turma1) turma1.value = jogo.turma1 || "";
+    if (turma2) turma2.value = jogo.turma2 || "";
+    if (data) data.value = jogo.data || "";
+    if (hora) hora.value = jogo.hora || "";
+    if (local) local.value = jogo.local || "";
+    if (btnSalvar) btnSalvar.textContent = "💾 Atualizar jogo";
+
+    const adminSection = document.getElementById("adminSection");
+    if (adminSection) {
+        adminSection.scrollIntoView({ behavior: "smooth" });
+    }
+}
+
+async function excluirJogo(id) {
+    if (!isAdmin) {
+        alert("Apenas a área administrativa pode excluir jogos.");
+        return;
+    }
+    const jogo = jogos.find(j => j.id === id);
+    const desc = jogo ? (jogo.turma1 + " x " + jogo.turma2 + " (" + jogo.turno + ")") : id;
+    const conf = confirm('Tem certeza que deseja excluir o jogo "' + desc + '"?');
+    if (!conf) return;
+
+    try {
+        await db.collection("jogos").doc(id).delete();
+        alert("Jogo excluído com sucesso.");
+        if (jogoEditandoId === id) {
+            limparFormularioJogo();
+        }
+    } catch (error) {
+        console.error("Erro ao excluir jogo:", error);
+        alert("Erro ao excluir jogo. Tente novamente.");
+    }
+}
+
+/* ============= 16) TROCA DE TELAS (ALUNO / INSCRITOS / JOGOS / ADMIN) ============= */
 
 function alternarPainelInscritos() {
     if (adminAberto) {
@@ -1534,21 +1978,60 @@ function alternarPainelInscritos() {
     }
     const secForm = document.getElementById("secInscricao");
     const secInscritos = document.getElementById("secInscritos");
+    const secJogos = document.getElementById("secJogos");
     const admin = document.getElementById("adminSection");
-    const btn = document.getElementById("btnToggleInscritos");
+    const btnInscritos = document.getElementById("btnToggleInscritos");
+    const btnJogos = document.getElementById("btnToggleJogos");
 
     admin.style.display = "none";
+
+    // se estava em jogos, volta para normal
+    mostrandoJogos = false;
+    if (btnJogos) btnJogos.textContent = "📅 Ver jogos";
+    if (secJogos) secJogos.style.display = "none";
 
     mostrandoInscritos = !mostrandoInscritos;
     if (mostrandoInscritos) {
         secForm.style.display = "none";
         secInscritos.style.display = "block";
-        btn.textContent = "⬅ Voltar para inscrição";
+        btnInscritos.textContent = "⬅ Voltar para inscrição";
         secInscritos.scrollIntoView({ behavior: "smooth" });
     } else {
         secForm.style.display = "block";
         secInscritos.style.display = "none";
-        btn.textContent = "👀 Ver inscritos";
+        btnInscritos.textContent = "👀 Ver inscritos";
+        secForm.scrollIntoView({ behavior: "smooth" });
+    }
+}
+
+function alternarPainelJogos() {
+    if (adminAberto) {
+        fecharAdmin();
+    }
+    const secForm = document.getElementById("secInscricao");
+    const secInscritos = document.getElementById("secInscritos");
+    const secJogos = document.getElementById("secJogos");
+    const admin = document.getElementById("adminSection");
+    const btnInscritos = document.getElementById("btnToggleInscritos");
+    const btnJogos = document.getElementById("btnToggleJogos");
+
+    admin.style.display = "none";
+
+    // se estava em inscritos, volta para normal
+    mostrandoInscritos = false;
+    if (btnInscritos) btnInscritos.textContent = "👀 Ver inscritos";
+    if (secInscritos) secInscritos.style.display = "none";
+
+    mostrandoJogos = !mostrandoJogos;
+    if (mostrandoJogos) {
+        secForm.style.display = "none";
+        secJogos.style.display = "block";
+        btnJogos.textContent = "⬅ Voltar para inscrição";
+        secJogos.scrollIntoView({ behavior: "smooth" });
+    } else {
+        secForm.style.display = "block";
+        secJogos.style.display = "none";
+        btnJogos.textContent = "📅 Ver jogos";
         secForm.scrollIntoView({ behavior: "smooth" });
     }
 }
@@ -1556,32 +2039,46 @@ function alternarPainelInscritos() {
 function abrirAdmin() {
     const secForm = document.getElementById("secInscricao");
     const secInscritos = document.getElementById("secInscritos");
+    const secJogos = document.getElementById("secJogos");
     const admin = document.getElementById("adminSection");
+    const btnInscritos = document.getElementById("btnToggleInscritos");
+    const btnJogos = document.getElementById("btnToggleJogos");
 
     adminAberto = true;
     secForm.style.display = "none";
     secInscritos.style.display = "none";
+    secJogos.style.display = "none";
+
+    mostrandoInscritos = false;
+    mostrandoJogos = false;
+    if (btnInscritos) btnInscritos.textContent = "👀 Ver inscritos";
+    if (btnJogos) btnJogos.textContent = "📅 Ver jogos";
+
     admin.style.display = "block";
     renderizarTabelaAdmin();
+    renderizarTabelaJogosAdmin();
     admin.scrollIntoView({ behavior: "smooth" });
 }
 
 function fecharAdmin() {
     const secForm = document.getElementById("secInscricao");
     const secInscritos = document.getElementById("secInscritos");
+    const secJogos = document.getElementById("secJogos");
     const admin = document.getElementById("adminSection");
+    const btnInscritos = document.getElementById("btnToggleInscritos");
+    const btnJogos = document.getElementById("btnToggleJogos");
 
     adminAberto = false;
     isAdmin = false;
     admin.style.display = "none";
 
-    if (mostrandoInscritos) {
-        secInscritos.style.display = "block";
-        secForm.style.display = "none";
-    } else {
-        secForm.style.display = "block";
-        secInscritos.style.display = "none";
-    }
+    mostrandoInscritos = false;
+    mostrandoJogos = false;
+    secForm.style.display = "block";
+    secInscritos.style.display = "none";
+    secJogos.style.display = "none";
+    if (btnInscritos) btnInscritos.textContent = "👀 Ver inscritos";
+    if (btnJogos) btnJogos.textContent = "📅 Ver jogos";
 }
 </script>
 </body>
