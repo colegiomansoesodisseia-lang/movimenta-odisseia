@@ -19,7 +19,7 @@
   --vermelho:#e74c3c;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'League Spartan',sans-serif;background:#fff}
+body{font-family:'League Spartan',sans-serif;background:#fff;overflow-x:hidden}
 .hidden{display:none}
 
 /* HEADER */
@@ -33,7 +33,7 @@ header{
   font-weight:700;
   position:fixed;
   top:0;left:0;right:0;
-  z-index:1000;
+  z-index:3000;
 }
 header button{
   position:absolute;
@@ -41,6 +41,7 @@ header button{
   border:none;
   color:#fff;
   font-size:26px;
+  cursor:pointer;
 }
 #btnMenu{left:20px}
 #btnVoltar{right:20px;font-size:14px}
@@ -48,29 +49,31 @@ header button{
 /* MENU */
 #menu{
   position:fixed;
-  top:0;left:-300px;
-  width:300px;height:100%;
+  top:0;left:-100%;
+  width:280px;height:100%;
   background:#f6f1ff;
-  padding:100px 20px;
+  padding:100px 20px 30px;
   transition:.3s;
-  z-index:2000;
+  z-index:4000;
+  display:flex;
+  flex-direction:column;
 }
 #menu.open{left:0}
 #menu button{
-  width:100%;
   margin-bottom:14px;
   padding:14px;
   border:none;
   border-radius:30px;
-  font-weight:700;
   color:#fff;
+  font-weight:700;
+  cursor:pointer;
 }
 .i{background:#b388ff}
 .c{background:#ff6f91}
 .e{background:#6ec6ff}
 .a{background:#e91e63}
 .social{
-  margin-top:30px;
+  margin-top:auto;
   display:flex;
   justify-content:center;
   gap:20px;
@@ -80,73 +83,91 @@ header button{
 /* SECTIONS */
 section{
   min-height:100vh;
-  padding:120px 20px 60px;
+  padding:120px 20px 140px;
   position:relative;
+  overflow:hidden;
 }
+section.active{display:block}
 section:not(.active){display:none}
 
-/* DECORAÇÃO */
+/* DECORAÇÕES RESPONSIVAS */
 .decor{
   position:absolute;
-  width:clamp(120px,30vw,200px);
-  top:clamp(80px,15vw,140px);
+  width:min(180px,40vw);
+  top:100px;
+  z-index:1;
   pointer-events:none;
 }
-.left{left:-20px}
-.right{right:-20px}
+.left{left:-10vw}
+.right{right:-10vw}
 .flip{transform:scaleX(-1)}
 .footer{
   position:absolute;
-  bottom:clamp(-200px,-20vw,-120px);
+  bottom:-120px;
+  left:0;
   width:100%;
+  max-width:100%;
+  z-index:0;
 }
 
 /* FORM */
-.form{max-width:600px;margin:auto;z-index:2;position:relative}
-label{display:block;margin-top:14px}
+.form{
+  max-width:640px;
+  margin:0 auto;
+  background:transparent;
+  position:relative;
+  z-index:2;
+}
+label{display:block;margin-top:16px;color:#5a2ea6}
 input,select,textarea{
   width:100%;
   padding:14px;
-  border-radius:16px;
+  border-radius:18px;
   border:none;
   background:var(--lilas);
 }
 button.submit{
-  margin-top:20px;
-  padding:14px;
+  margin-top:22px;
+  padding:14px 30px;
   border:none;
   border-radius:22px;
   background:var(--roxo);
   color:#fff;
+  cursor:pointer;
 }
-.msg{margin-top:15px;padding:12px;border-radius:14px;text-align:center}
-.ok{background:#eafaf1;color:var(--verde)}
-.err{background:#fdecea;color:var(--vermelho)}
+.center{text-align:center}
 
 h1{
   font-family:'Amsterdam One',cursive;
-  font-size:clamp(40px,8vw,64px);
+  font-size:clamp(42px,10vw,64px);
   color:var(--laranja);
   text-align:center;
 }
-.center{text-align:center}
+p{font-size:16px;text-align:center}
+
+/* MOBILE AJUSTES */
+@media (max-width:600px){
+  .decor{top:140px}
+  .left{left:-20vw}
+  .right{right:-20vw}
+}
 </style>
 </head>
 
 <body>
 
-<header>
+<header id="header">
   <button id="btnMenu">☰</button>
   <span id="titulo">ESTUDANTES DE ATITUDE – CEMO</span>
   <button id="btnVoltar" class="hidden">VOLTAR</button>
 </header>
 
 <div id="menu">
-  <button class="i" onclick="trocar('home')">INÍCIO</button>
-  <button class="i" onclick="trocar('inscricao')">INSCRIÇÃO</button>
-  <button class="c" onclick="trocar('consulta')">CONSULTA</button>
-  <button class="e" onclick="trocar('equipe')">EQUIPE</button>
-  <button class="a" onclick="trocar('adm')">ÁREA ADM</button>
+  <button class="i" data-page="home">INÍCIO</button>
+  <button class="i" data-page="inscricoes">INSCRIÇÕES</button>
+  <button class="c" data-page="consulta">CONSULTA</button>
+  <button class="e" data-page="equipe">EQUIPE</button>
+  <button class="a" data-page="adm">ÁREA ADM</button>
 
   <div class="social">
     <a id="ig" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -157,105 +178,54 @@ h1{
 
 <section id="home" class="active">
   <h1>Bem-Vindo!</h1>
+  <p>Acesse o menu para fazer <b>INSCRIÇÃO</b>, <b>CONSULTA</b> ou <b>ALGO A MAIS</b>.</p>
   <div class="center">
-    <button class="submit" onclick="menu.classList.add('open')">ACESSE O MENU</button>
+    <button class="submit" id="btnAbrirMenu">ACESSE O MENU POR AQUI</button>
   </div>
-  <img src="planeta_roxo.png" class="decor left flip">
-  <img src="foguete_roxo.png" class="decor right">
-  <img src="rodape_planeta.png" class="footer">
+  <img src="./planeta_roxo.png" class="decor left flip">
+  <img src="./foguete_roxo.png" class="decor right">
+  <img src="./rodape_planeta.png" class="footer">
 </section>
 
-<section id="inscricao">
+<section id="inscricoes">
   <div class="form">
-    <label>Nome</label><input id="iNome">
-    <label>CPF</label><input id="iCpf">
-
-    <label>Turno</label>
-    <select id="iTurno"></select>
-
-    <label>Turma</label>
-    <select id="iTurma"></select>
-
-    <button class="submit" onclick="inscrever()">ENVIAR</button>
-    <div id="msgIns"></div>
+    <label>Nome</label><input>
+    <label>CPF</label><input>
+    <label>Email</label><input>
+    <label>WhatsApp</label><input>
+    <button class="submit">ENVIAR</button>
   </div>
-
-  <img src="planeta_roxo.png" class="decor left flip">
-  <img src="rodape_planeta.png" class="footer">
+  <img src="./planeta_roxo.png" class="decor left flip">
+  <img src="./foguete_roxo.png" class="decor right">
+  <img src="./rodape_planeta.png" class="footer">
 </section>
 
 <section id="consulta">
   <div class="form">
-    <label>CPF</label><input id="cCpf">
-    <button class="submit" onclick="consultar()">CONSULTAR</button>
-    <div id="msgCons"></div>
+    <label>Nome ou CPF</label><input>
+    <button class="submit">CONSULTAR</button>
   </div>
+  <img src="./planeta_amarelo.png" class="decor left">
+  <img src="./planeta_roxo.png" class="decor right">
+  <img src="./rodape_planeta.png" class="footer">
 </section>
 
 <section id="equipe">
   <div class="form">
+    <label>Nome</label><input>
+    <label>Email</label><input>
     <label>Mensagem</label><textarea></textarea>
     <button class="submit">ENVIAR</button>
   </div>
-
-  <img src="planeta_roxo.png" class="decor left flip">
-  <img src="planeta_amarelo.png" class="decor right flip">
-  <img src="rodape_planeta.png" class="footer">
-</section>
-
-<section id="adm">
-  <div class="form">
-    <label>Senha Administrativa</label>
-    <input type="password" id="senhaAdm">
-    <button class="submit" onclick="loginAdm()">ENTRAR</button>
-    <div id="painelAdm"></div>
-  </div>
+  <img src="./planeta_roxo.png" class="decor left flip">
+  <img src="./planeta_amarelo.png" class="decor right flip">
+  <img src="./rodape_planeta.png" class="footer">
 </section>
 
 <script>
 const menu=document.getElementById('menu');
 btnMenu.onclick=()=>menu.classList.toggle('open');
-btnVoltar.onclick=()=>trocar('home');
-
-function trocar(p){
- document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
- document.getElementById(p).classList.add('active');
- menu.classList.remove('open');
- btnVoltar.classList.toggle('hidden',p==='home');
-}
-
-/* TURNOS E TURMAS */
-const turmas={
- Matutino:["7ºA","7ºB","7ºC"],
- Vespertino:["6ºA","6ºB"],
- Noturno:["1ºA","2ºA"]
-};
-
-iTurno.innerHTML='<option value="">Selecione</option>'+Object.keys(turmas).map(t=>`<option>${t}</option>`).join('');
-iTurno.onchange=()=>{
- iTurma.innerHTML='<option value="">Selecione</option>';
- (turmas[iTurno.value]||[]).forEach(t=>iTurma.innerHTML+=`<option>${t}</option>`);
-};
-
-/* DADOS SIMULADOS */
-let inscritos=[];
-
-function inscrever(){
- inscritos.push({cpf:iCpf.value,status:'AGUARDANDO'});
- msgIns.innerHTML='<div class="msg ok">Inscrição realizada com sucesso</div>';
-}
-
-function consultar(){
- const r=inscritos.find(d=>d.cpf===cCpf.value);
- msgCons.innerHTML=r
-  ? `<div class="msg">Status: ${r.status}</div>`
-  : `<div class="msg err">CPF não encontrado</div>`;
-}
-
-function loginAdm(){
- if(senhaAdm.value!=='52090949'){alert('Senha incorreta');return}
- painelAdm.innerHTML='<div class="msg ok">Área administrativa ativa</div>';
-}
+btnAbrirMenu.onclick=()=>menu.classList.toggle('open');
 </script>
 
 </body>
