@@ -19,7 +19,7 @@
   --vermelho:#e74c3c;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'League Spartan',sans-serif}
+body{font-family:'League Spartan',sans-serif;background:#fff}
 .hidden{display:none}
 
 /* HEADER */
@@ -48,8 +48,8 @@ header button{
 /* MENU */
 #menu{
   position:fixed;
-  top:0;left:-280px;
-  width:280px;height:100%;
+  top:0;left:-300px;
+  width:300px;height:100%;
   background:#f6f1ff;
   padding:100px 20px;
   transition:.3s;
@@ -58,15 +58,19 @@ header button{
 #menu.open{left:0}
 #menu button{
   width:100%;
-  margin-bottom:12px;
+  margin-bottom:14px;
   padding:14px;
   border:none;
   border-radius:30px;
-  color:#fff;
   font-weight:700;
+  color:#fff;
 }
+.i{background:#b388ff}
+.c{background:#ff6f91}
+.e{background:#6ec6ff}
+.a{background:#e91e63}
 .social{
-  margin-top:40px;
+  margin-top:30px;
   display:flex;
   justify-content:center;
   gap:20px;
@@ -81,24 +85,25 @@ section{
 }
 section:not(.active){display:none}
 
-/* DECORAÇÕES */
+/* DECORAÇÃO */
 .decor{
   position:absolute;
   width:clamp(120px,30vw,200px);
   top:clamp(80px,15vw,140px);
+  pointer-events:none;
 }
 .left{left:-20px}
 .right{right:-20px}
 .flip{transform:scaleX(-1)}
 .footer{
   position:absolute;
-  bottom:clamp(-180px,-20vw,-120px);
+  bottom:clamp(-200px,-20vw,-120px);
   width:100%;
 }
 
 /* FORM */
 .form{max-width:600px;margin:auto;z-index:2;position:relative}
-label{margin-top:14px;display:block}
+label{display:block;margin-top:14px}
 input,select,textarea{
   width:100%;
   padding:14px;
@@ -124,6 +129,7 @@ h1{
   color:var(--laranja);
   text-align:center;
 }
+.center{text-align:center}
 </style>
 </head>
 
@@ -136,11 +142,11 @@ h1{
 </header>
 
 <div id="menu">
-  <button onclick="trocar('home')">INÍCIO</button>
-  <button onclick="trocar('inscricao')">INSCRIÇÃO</button>
-  <button onclick="trocar('consulta')">CONSULTA</button>
-  <button onclick="trocar('equipe')">EQUIPE</button>
-  <button onclick="trocar('adm')">ÁREA ADM</button>
+  <button class="i" onclick="trocar('home')">INÍCIO</button>
+  <button class="i" onclick="trocar('inscricao')">INSCRIÇÃO</button>
+  <button class="c" onclick="trocar('consulta')">CONSULTA</button>
+  <button class="e" onclick="trocar('equipe')">EQUIPE</button>
+  <button class="a" onclick="trocar('adm')">ÁREA ADM</button>
 
   <div class="social">
     <a id="ig" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -151,7 +157,7 @@ h1{
 
 <section id="home" class="active">
   <h1>Bem-Vindo!</h1>
-  <div class="form">
+  <div class="center">
     <button class="submit" onclick="menu.classList.add('open')">ACESSE O MENU</button>
   </div>
   <img src="planeta_roxo.png" class="decor left flip">
@@ -163,13 +169,17 @@ h1{
   <div class="form">
     <label>Nome</label><input id="iNome">
     <label>CPF</label><input id="iCpf">
+
     <label>Turno</label>
     <select id="iTurno"></select>
+
     <label>Turma</label>
     <select id="iTurma"></select>
+
     <button class="submit" onclick="inscrever()">ENVIAR</button>
     <div id="msgIns"></div>
   </div>
+
   <img src="planeta_roxo.png" class="decor left flip">
   <img src="rodape_planeta.png" class="footer">
 </section>
@@ -187,6 +197,7 @@ h1{
     <label>Mensagem</label><textarea></textarea>
     <button class="submit">ENVIAR</button>
   </div>
+
   <img src="planeta_roxo.png" class="decor left flip">
   <img src="planeta_amarelo.png" class="decor right flip">
   <img src="rodape_planeta.png" class="footer">
@@ -194,7 +205,8 @@ h1{
 
 <section id="adm">
   <div class="form">
-    <label>Senha</label><input type="password" id="senhaAdm">
+    <label>Senha Administrativa</label>
+    <input type="password" id="senhaAdm">
     <button class="submit" onclick="loginAdm()">ENTRAR</button>
     <div id="painelAdm"></div>
   </div>
@@ -212,6 +224,7 @@ function trocar(p){
  btnVoltar.classList.toggle('hidden',p==='home');
 }
 
+/* TURNOS E TURMAS */
 const turmas={
  Matutino:["7ºA","7ºB","7ºC"],
  Vespertino:["6ºA","6ºB"],
@@ -224,16 +237,19 @@ iTurno.onchange=()=>{
  (turmas[iTurno.value]||[]).forEach(t=>iTurma.innerHTML+=`<option>${t}</option>`);
 };
 
-let dados=[];
+/* DADOS SIMULADOS */
+let inscritos=[];
 
 function inscrever(){
- dados.push({cpf:iCpf.value,status:'AGUARDANDO'});
- msgIns.innerHTML='<div class="msg ok">Inscrição realizada</div>';
+ inscritos.push({cpf:iCpf.value,status:'AGUARDANDO'});
+ msgIns.innerHTML='<div class="msg ok">Inscrição realizada com sucesso</div>';
 }
 
 function consultar(){
- const r=dados.find(d=>d.cpf===cCpf.value);
- msgCons.innerHTML=r?`<div class="msg">Status: ${r.status}</div>`:`<div class="msg err">CPF não encontrado</div>`;
+ const r=inscritos.find(d=>d.cpf===cCpf.value);
+ msgCons.innerHTML=r
+  ? `<div class="msg">Status: ${r.status}</div>`
+  : `<div class="msg err">CPF não encontrado</div>`;
 }
 
 function loginAdm(){
